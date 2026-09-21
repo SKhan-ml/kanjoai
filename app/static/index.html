@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KanjoAI — Reconciliation Demo</title>
+<style>
+  :root{
+    --ink:#1b2430; --ink-soft:#5b6577; --paper:#f5f6f8; --surface:#ffffff; --line:#e2e5eb;
+    --indigo:#2d4a7a; --indigo-soft:#e8edf5; --indigo-deep:#1c2f4f;
+    --green:#276749; --green-soft:#e5f3ea;
+    --amber:#96660f; --amber-soft:#faf0dc;
+    --seal:#a8330f; --seal-soft:#fbe8e1;
+    --shadow: 0 1px 2px rgba(27,36,48,.06), 0 8px 24px -12px rgba(27,36,48,.18);
+    --font-body: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-mono: ui-monospace, "SF Mono", "Cascadia Code", "Roboto Mono", Consolas, monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--paper); color:var(--ink); font-family:var(--font-body); -webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1180px; margin:0 auto; padding:28px 20px 64px;}
+  .mono{font-family:var(--font-mono); font-variant-numeric:tabular-nums;}
+
+  header{display:flex; flex-wrap:wrap; gap:16px; justify-content:space-between; align-items:center; padding-bottom:18px; border-bottom:1px solid var(--line); margin-bottom:22px;}
+  .brand{display:flex; align-items:center; gap:12px;}
+  .brand .mark{width:38px; height:38px; border-radius:10px; background:var(--indigo); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:16px;}
+  .brand h1{font-size:20px; margin:0; font-weight:800; letter-spacing:-.01em;}
+  .brand p{margin:0; font-size:12.5px; color:var(--ink-soft);}
+  .status{display:flex; align-items:center; gap:8px; font-family:var(--font-mono); font-size:12px; color:var(--ink-soft); padding:6px 12px; border:1px solid var(--line); border-radius:999px; background:var(--surface);}
+  .status .dot{width:8px; height:8px; border-radius:50%; background:#9aa3b2;}
+  .status.ok .dot{background:var(--green);}
+  .status.bad .dot{background:var(--seal);}
+
+  .pipeline{display:flex; flex-wrap:wrap; gap:0; border:1px solid var(--line); border-radius:12px; overflow:hidden; background:var(--surface); box-shadow:var(--shadow); margin-bottom:26px;}
+  .pipeline .step{flex:1 1 120px; padding:12px 14px; border-right:1px solid var(--line); font-size:12px;}
+  .pipeline .step:last-child{border-right:none;}
+  .pipeline .step b{display:block; font-size:12.5px; margin-bottom:2px;}
+  .pipeline .step span{color:var(--ink-soft);}
+
+  .grid{display:grid; grid-template-columns:340px 1fr; gap:22px;}
+  @media (max-width:860px){ .grid{grid-template-columns:1fr;} }
+
+  .card{background:var(--surface); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); padding:18px 20px;}
+  .card + .card{margin-top:18px;}
+  .card h2{font-size:14px; margin:0 0 4px; font-weight:700;}
+  .card .hint{font-size:12px; color:var(--ink-soft); margin:0 0 14px;}
+
+  .samples{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .sample-btn{border:1px solid var(--line); border-radius:10px; background:var(--paper); padding:8px; cursor:pointer; text-align:left; transition:border-color .12s, transform .08s;}
+  .sample-btn:hover{border-color:var(--indigo);}
+  .sample-btn:active{transform:scale(.98);}
+  .sample-btn img{width:100%; border-radius:6px; display:block; margin-bottom:6px; border:1px solid var(--line);}
+  .sample-btn .lbl{font-size:11.5px; font-weight:600;}
+  .sample-btn .exp{font-size:10.5px; color:var(--ink-soft); margin-top:2px; line-height:1.4;}
+
+  .drop{border:1.5px dashed var(--line); border-radius:12px; padding:20px; text-align:center; cursor:pointer; font-size:13px; color:var(--ink-soft); transition:border-color .12s, background .12s;}
+  .drop.drag{border-color:var(--indigo); background:var(--indigo-soft);}
+  .drop b{color:var(--indigo);}
+  input[type=file]{display:none;}
+
+  .field{margin-bottom:12px;}
+  .field label{display:block; font-size:11.5px; font-weight:600; color:var(--ink-soft); margin-bottom:4px; text-transform:uppercase; letter-spacing:.03em;}
+  .field input{width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:8px; font-size:13px; font-family:var(--font-mono); background:var(--paper); color:var(--ink);}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  button.primary{width:100%; background:var(--indigo); color:#fff; border:none; padding:10px 14px; border-radius:9px; font-size:13.5px; font-weight:700; cursor:pointer;}
+  button.primary:hover{background:var(--indigo-deep);}
+  button.primary:disabled{opacity:.5; cursor:default;}
+  .settings summary{cursor:pointer; font-size:12px; color:var(--ink-soft); margin-bottom:10px;}
+
+  .empty{color:var(--ink-soft); font-size:13px; text-align:center; padding:50px 20px;}
+  .spinner{width:26px; height:26px; border-radius:50%; border:3px solid var(--indigo-soft); border-top-color:var(--indigo); animation:spin .7s linear infinite; margin:0 auto 12px;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  .result-head{display:flex; flex-wrap:wrap; gap:14px; align-items:center; margin-bottom:16px;}
+  .pill{display:inline-flex; align-items:center; gap:6px; font-family:var(--font-mono); font-size:12px; font-weight:700; letter-spacing:.03em; padding:5px 12px; border-radius:999px; text-transform:uppercase;}
+  .pill.auto_approved{background:var(--green-soft); color:var(--green);}
+  .pill.rejected{background:var(--seal-soft); color:var(--seal);}
+  .pill.flagged{background:var(--amber-soft); color:var(--amber);}
+  .pill::before{content:''; width:6px; height:6px; border-radius:50%; background:currentColor;}
+  .result-title{font-weight:700; font-size:16px;}
+  .result-sub{font-family:var(--font-mono); font-size:12.5px; color:var(--ink-soft);}
+
+  .fields{display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:10px; overflow:hidden; margin-bottom:16px;}
+  .fields div{background:var(--surface); padding:10px 12px;}
+  .fields .k{font-size:10px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); margin-bottom:3px;}
+  .fields .v{font-family:var(--font-mono); font-size:13px; font-weight:600;}
+
+  .reason{font-size:13.5px; color:var(--ink-soft); margin-bottom:16px; line-height:1.6; padding:12px 14px; background:var(--paper); border-radius:8px; border:1px solid var(--line);}
+  .reason b{color:var(--ink);}
+  .audit{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:10px;}
+  .audit li{display:flex; gap:12px; font-size:13px;}
+  .audit .dot2{flex:0 0 auto; width:8px; height:8px; border-radius:50%; background:var(--indigo); margin-top:6px;}
+  .audit .step-name{font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--indigo); display:block; margin-bottom:2px;}
+  .audit .detail{color:var(--ink-soft); line-height:1.55;}
+
+  .history{display:flex; flex-direction:column; gap:8px; max-height:340px; overflow-y:auto;}
+  .hist-row{display:flex; gap:10px; align-items:center; padding:8px 10px; border:1px solid var(--line); border-radius:8px; cursor:pointer; font-size:12.5px;}
+  .hist-row:hover{border-color:var(--indigo);}
+  .hist-row .pill{padding:2px 8px; font-size:10px;}
+  .hist-row .hid{color:var(--ink-soft); font-family:var(--font-mono);}
+  .hist-row .hname{flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .err{color:var(--seal); font-size:13px; padding:12px; background:var(--seal-soft); border-radius:8px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="mark">勘</div>
+      <div>
+        <h1>KanjoAI</h1>
+        <p>Autonomous invoice / vendor reconciliation — try it live</p>
+      </div>
+    </div>
+    <div class="status" id="status"><span class="dot"></span><span id="statusText">checking…</span></div>
+  </header>
+
+  <div class="pipeline">
+    <div class="step"><b>1 · Extract</b><span>vision model reads the invoice</span></div>
+    <div class="step"><b>2 · Match</b><span>looks up the claimed PO</span></div>
+    <div class="step"><b>3 · Validate</b><span>amount, currency, vendor, duplicates</span></div>
+    <div class="step"><b>4 · Decide</b><span>approve / flag / reject</span></div>
+    <div class="step"><b>5 · Act</b><span>persisted with a full audit trail</span></div>
+  </div>
+
+  <div class="grid">
+    <div>
+      <div class="card">
+        <h2>Try a sample invoice</h2>
+        <p class="hint">Four scenarios, four different outcomes — pick one.</p>
+        <div class="samples" id="samples"></div>
+      </div>
+
+      <div class="card">
+        <h2>Or use your own</h2>
+        <p class="hint">Photo or scan of any invoice — jpg, png, or webp.</p>
+        <div class="drop" id="drop">
+          <b>Click to upload</b> or drag an image here
+        </div>
+        <input type="file" id="fileInput" accept="image/*">
+      </div>
+
+      <div class="card">
+        <h2>Set up your own scenario</h2>
+        <p class="hint">Register a purchase order, then upload an invoice against it.</p>
+        <div class="field">
+          <label>Vendor name</label>
+          <input id="poVendor" placeholder="Your Vendor Co., Ltd.">
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label>PO number</label>
+            <input id="poNumber" placeholder="PO-2001">
+          </div>
+          <div class="field">
+            <label>Amount</label>
+            <input id="poAmount" placeholder="50000" type="number">
+          </div>
+        </div>
+        <button class="primary" id="createPoBtn" type="button">Create purchase order</button>
+        <p class="hint" id="poResult" style="margin-top:10px;"></p>
+      </div>
+
+      <div class="card settings">
+        <details>
+          <summary>API key (advanced)</summary>
+          <div class="field">
+            <input id="apiKey" value="demo-local-api-key">
+          </div>
+        </details>
+      </div>
+    </div>
+
+    <div>
+      <div class="card" id="resultCard">
+        <h2>Result</h2>
+        <div id="resultBody"><div class="empty">Pick a sample or upload an invoice to see the agent's decision here.</div></div>
+      </div>
+
+      <div class="card">
+        <h2>Recent invoices</h2>
+        <div class="history" id="history"><div class="empty">Nothing processed yet.</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_KEY_DEFAULT = document.getElementById('apiKey').value;
+function apiKey(){ return document.getElementById('apiKey').value || API_KEY_DEFAULT; }
+
+const SAMPLES = [
+  {file:'sample_match.png', label:'Clean match', explain:'Same vendor, same PO, amount within tolerance → auto-approved.'},
+  {file:'sample_overamount.png', label:'Amount over tolerance', explain:'Invoiced amount is well above the PO → flagged for review.'},
+  {file:'sample_vendor_mismatch.png', label:'Vendor mismatch', explain:'Cites a real PO, but from a different vendor → rejected.'},
+  {file:'sample_duplicate.png', label:'Duplicate invoice #', explain:'Reuses an invoice number already on file → rejected.'},
+];
+
+function renderSamples(){
+  const el = document.getElementById('samples');
+  el.innerHTML = SAMPLES.map(s => `
+    <button class="sample-btn" data-file="${s.file}">
+      <img src="/static/samples/${s.file}" alt="${s.label}">
+      <div class="lbl">${s.label}</div>
+      <div class="exp">${s.explain}</div>
+    </button>
+  `).join('');
+  el.querySelectorAll('.sample-btn').forEach(btn => {
+    btn.addEventListener('click', () => runSample(btn.dataset.file));
+  });
+}
+
+async function checkHealth(){
+  const el = document.getElementById('status');
+  const txt = document.getElementById('statusText');
+  try{
+    const r = await fetch('/health');
+    if(r.ok){ el.className='status ok'; txt.textContent='backend connected'; }
+    else throw new Error();
+  }catch(e){ el.className='status bad'; txt.textContent='backend unreachable'; }
+}
+
+function setLoading(){
+  document.getElementById('resultBody').innerHTML = `<div class="empty"><div class="spinner"></div>Running extract → match → validate → decide…</div>`;
+}
+
+function statusLabel(s){
+  return {auto_approved:'Auto-approved', flagged:'Flagged for review', rejected:'Rejected', pending:'Pending'}[s] || s;
+}
+
+function renderResult(inv){
+  const pillClass = inv.status;
+  const fields = [
+    ['Vendor', inv.vendor_name_raw || '—'],
+    ['Invoice #', inv.invoice_number || '—'],
+    ['PO #', inv.po_number || '—'],
+    ['Amount', inv.amount != null ? `${inv.amount.toLocaleString()} ${inv.currency||''}` : '—'],
+    ['Confidence', inv.confidence != null ? inv.confidence.toFixed(2) : '—'],
+  ];
+  const audit = (inv.audit_logs||[]).map(a => `
+    <li><span class="dot2"></span><div>
+      <span class="step-name">${a.step}</span>
+      <div class="detail">${a.detail || ''}</div>
+    </div></li>
+  `).join('');
+  document.getElementById('resultBody').innerHTML = `
+    <div class="result-head">
+      <span class="pill ${pillClass}">${statusLabel(inv.status)}</span>
+      <div>
+        <div class="result-title">${inv.vendor_name_raw || 'Unknown vendor'}</div>
+        <div class="result-sub">invoice #${inv.id}</div>
+      </div>
+    </div>
+    <div class="fields">
+      ${fields.map(([k,v]) => `<div><div class="k">${k}</div><div class="v">${v}</div></div>`).join('')}
+    </div>
+    <div class="reason"><b>Reasoning —</b> ${inv.decision_reason || 'No reasoning recorded.'}</div>
+    <ul class="audit">${audit}</ul>
+  `;
+}
+
+function renderError(msg){
+  document.getElementById('resultBody').innerHTML = `<div class="err">${msg}</div>`;
+}
+
+async function submitInvoice(blob, filename){
+  setLoading();
+  try{
+    const fd = new FormData();
+    fd.append('file', blob, filename);
+    const r = await fetch('/invoices/process', {
+      method:'POST',
+      headers:{'X-API-Key': apiKey()},
+      body: fd,
+    });
+    if(!r.ok){
+      const t = await r.text();
+      renderError(`Request failed (${r.status}): ${t}`);
+      return;
+    }
+    const inv = await r.json();
+    renderResult(inv);
+    refreshHistory();
+  }catch(e){
+    renderError('Could not reach the backend: ' + e.message);
+  }
+}
+
+async function runSample(file){
+  const r = await fetch(`/static/samples/${file}`);
+  const blob = await r.blob();
+  submitInvoice(blob, file);
+}
+
+function setupUpload(){
+  const drop = document.getElementById('drop');
+  const input = document.getElementById('fileInput');
+  drop.addEventListener('click', () => input.click());
+  input.addEventListener('change', () => {
+    if(input.files[0]) submitInvoice(input.files[0], input.files[0].name);
+  });
+  ['dragover','dragenter'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('drag'); }));
+  ['dragleave','drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('drag'); }));
+  drop.addEventListener('drop', e => {
+    const f = e.dataTransfer.files[0];
+    if(f) submitInvoice(f, f.name);
+  });
+}
+
+async function refreshHistory(){
+  const el = document.getElementById('history');
+  try{
+    const r = await fetch('/invoices', {headers:{'X-API-Key': apiKey()}});
+    if(!r.ok){ el.innerHTML = '<div class="empty">Could not load history.</div>'; return; }
+    const items = await r.json();
+    if(!items.length){ el.innerHTML = '<div class="empty">Nothing processed yet.</div>'; return; }
+    el.innerHTML = items.slice().reverse().map(inv => `
+      <div class="hist-row" data-id="${inv.id}">
+        <span class="pill ${inv.status}">${statusLabel(inv.status)}</span>
+        <span class="hname">${inv.vendor_name_raw || 'Unknown'} · ${inv.invoice_number || '—'}</span>
+        <span class="hid">#${inv.id}</span>
+      </div>
+    `).join('');
+    el.querySelectorAll('.hist-row').forEach(row => {
+      row.addEventListener('click', async () => {
+        const r2 = await fetch(`/invoices/${row.dataset.id}`, {headers:{'X-API-Key': apiKey()}});
+        if(r2.ok) renderResult(await r2.json());
+      });
+    });
+  }catch(e){
+    el.innerHTML = '<div class="empty">Could not load history.</div>';
+  }
+}
+
+document.getElementById('createPoBtn').addEventListener('click', async () => {
+  const vendor_name = document.getElementById('poVendor').value.trim();
+  const po_number = document.getElementById('poNumber').value.trim();
+  const expected_amount = parseFloat(document.getElementById('poAmount').value);
+  const out = document.getElementById('poResult');
+  if(!vendor_name || !po_number || !expected_amount){
+    out.textContent = 'Fill in vendor, PO number, and amount first.';
+    return;
+  }
+  try{
+    const r = await fetch('/purchase-orders', {
+      method:'POST',
+      headers:{'Content-Type':'application/json', 'X-API-Key': apiKey()},
+      body: JSON.stringify({vendor_name, po_number, expected_amount, currency:'JPY'}),
+    });
+    if(!r.ok){ out.textContent = 'Failed: ' + await r.text(); return; }
+    out.textContent = `Created — now upload an invoice claiming PO "${po_number}".`;
+  }catch(e){
+    out.textContent = 'Could not reach the backend.';
+  }
+});
+
+renderSamples();
+setupUpload();
+checkHealth();
+refreshHistory();
+</script>
+</body>
+</html>
