@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     # model is only paid for when the cheap model is unsure or fails
     # validation.
     model_cheap: str = "openai/gpt-4o-mini"
-    model_strong: str = "anthropic/claude-opus-4.7"
+    model_strong: str = "anthropic/claude-opus-5"
     model_vision: str = "openai/gpt-4o-mini"
 
     api_key: str = "demo-local-api-key"

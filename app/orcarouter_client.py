@@ -1,7 +1,7 @@
 """
 Thin wrapper around OrcaRouter's OpenAI-compatible API
 (https://api.orcarouter.ai/v1, Bearer auth, model ids like
-"openai/gpt-4o-mini" / "anthropic/claude-opus-4.7").
+"openai/gpt-4o-mini" / "anthropic/claude-opus-5").
 
 `complete_json` tries the cheap model first, and only pays for the strong
 model when the cheap one is unsure, fails to return valid JSON, or errors
