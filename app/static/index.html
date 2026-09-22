@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="en">
+<html lang="ja">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>KanjoAI — Reconciliation Demo</title>
+<title>KanjoAI — 照合デモ</title>
 <style>
   :root{
     --ink:#1b2430; --ink-soft:#5b6577; --paper:#f5f6f8; --surface:#ffffff; --line:#e2e5eb;
@@ -110,61 +110,61 @@
       <div class="mark">勘</div>
       <div>
         <h1>KanjoAI</h1>
-        <p>Autonomous invoice / vendor reconciliation — try it live</p>
+        <p>自律型請求書・取引先照合エージェント — ライブで試す</p>
       </div>
     </div>
-    <div class="status" id="status"><span class="dot"></span><span id="statusText">checking…</span></div>
+    <div class="status" id="status"><span class="dot"></span><span id="statusText">確認中…</span></div>
   </header>
 
   <div class="pipeline">
-    <div class="step"><b>1 · Extract</b><span>vision model reads the invoice</span></div>
-    <div class="step"><b>2 · Match</b><span>looks up the claimed PO</span></div>
-    <div class="step"><b>3 · Validate</b><span>amount, currency, vendor, duplicates</span></div>
-    <div class="step"><b>4 · Decide</b><span>approve / flag / reject</span></div>
-    <div class="step"><b>5 · Act</b><span>persisted with a full audit trail</span></div>
+    <div class="step"><b>1 · 抽出</b><span>Visionモデルが請求書を読み取る</span></div>
+    <div class="step"><b>2 · 照合</b><span>記載された発注書を検索</span></div>
+    <div class="step"><b>3 · 検証</b><span>金額・通貨・取引先・重複をチェック</span></div>
+    <div class="step"><b>4 · 判断</b><span>承認 / 要確認 / 却下</span></div>
+    <div class="step"><b>5 · 記録</b><span>監査ログ付きで永続化</span></div>
   </div>
 
   <div class="grid">
     <div>
       <div class="card">
-        <h2>Try a sample invoice</h2>
-        <p class="hint">Four scenarios, four different outcomes — pick one.</p>
-        <div class="samples" id="samples"></div>
-      </div>
-
-      <div class="card">
-        <h2>Or use your own</h2>
-        <p class="hint">Photo or scan of any invoice — jpg, png, or webp.</p>
+        <h2>自分の請求書を試す</h2>
+        <p class="hint">請求書の写真またはスキャン画像 — jpg、png、webp対応。</p>
         <div class="drop" id="drop">
-          <b>Click to upload</b> or drag an image here
+          <b>クリックしてアップロード</b>、または画像をドラッグ＆ドロップ
         </div>
         <input type="file" id="fileInput" accept="image/*">
       </div>
 
       <div class="card">
-        <h2>Set up your own scenario</h2>
-        <p class="hint">Register a purchase order, then upload an invoice against it.</p>
+        <h2>サンプル請求書を試す</h2>
+        <p class="hint">4つのシナリオ、4つの異なる結果 — 1つ選んでください。</p>
+        <div class="samples" id="samples"></div>
+      </div>
+
+      <div class="card">
+        <h2>オリジナルのシナリオを作成</h2>
+        <p class="hint">発注書を登録してから、それに対する請求書をアップロードしてください。</p>
         <div class="field">
-          <label>Vendor name</label>
-          <input id="poVendor" placeholder="Your Vendor Co., Ltd.">
+          <label>取引先名</label>
+          <input id="poVendor" placeholder="株式会社サンプル商事">
         </div>
         <div class="row2">
           <div class="field">
-            <label>PO number</label>
+            <label>発注書番号</label>
             <input id="poNumber" placeholder="PO-2001">
           </div>
           <div class="field">
-            <label>Amount</label>
+            <label>金額</label>
             <input id="poAmount" placeholder="50000" type="number">
           </div>
         </div>
-        <button class="primary" id="createPoBtn" type="button">Create purchase order</button>
+        <button class="primary" id="createPoBtn" type="button">発注書を作成</button>
         <p class="hint" id="poResult" style="margin-top:10px;"></p>
       </div>
 
       <div class="card settings">
         <details>
-          <summary>API key (advanced)</summary>
+          <summary>APIキー（詳細設定）</summary>
           <div class="field">
             <input id="apiKey" value="demo-local-api-key">
           </div>
@@ -174,13 +174,13 @@
 
     <div>
       <div class="card" id="resultCard">
-        <h2>Result</h2>
-        <div id="resultBody"><div class="empty">Pick a sample or upload an invoice to see the agent's decision here.</div></div>
+        <h2>結果</h2>
+        <div id="resultBody"><div class="empty">サンプルを選ぶか請求書をアップロードすると、ここにエージェントの判断が表示されます。</div></div>
       </div>
 
       <div class="card">
-        <h2>Recent invoices</h2>
-        <div class="history" id="history"><div class="empty">Nothing processed yet.</div></div>
+        <h2>最近の処理履歴</h2>
+        <div class="history" id="history"><div class="empty">まだ処理された請求書がありません。</div></div>
       </div>
     </div>
   </div>
@@ -191,10 +191,10 @@ const API_KEY_DEFAULT = document.getElementById('apiKey').value;
 function apiKey(){ return document.getElementById('apiKey').value || API_KEY_DEFAULT; }
 
 const SAMPLES = [
-  {file:'sample_match.png', label:'Clean match', explain:'Same vendor, same PO, amount within tolerance → auto-approved.'},
-  {file:'sample_overamount.png', label:'Amount over tolerance', explain:'Invoiced amount is well above the PO → flagged for review.'},
-  {file:'sample_vendor_mismatch.png', label:'Vendor mismatch', explain:'Cites a real PO, but from a different vendor → rejected.'},
-  {file:'sample_duplicate.png', label:'Duplicate invoice #', explain:'Reuses an invoice number already on file → rejected.'},
+  {file:'sample_match.png', label:'正常一致', explain:'同じ取引先、同じ発注書、金額が許容範囲内 → 自動承認。'},
+  {file:'sample_overamount.png', label:'金額超過', explain:'請求金額が発注書の金額を大きく上回っている → 要確認としてフラグ。'},
+  {file:'sample_vendor_mismatch.png', label:'取引先名不一致', explain:'実在する発注書を記載しているが、取引先が異なる → 却下。'},
+  {file:'sample_duplicate.png', label:'重複請求書番号', explain:'既存の請求書番号を再利用している → 却下。'},
 ];
 
 function renderSamples(){
@@ -216,13 +216,13 @@ async function checkHealth(){
   const txt = document.getElementById('statusText');
   try{
     const r = await fetch('/health');
-    if(r.ok){ el.className='status ok'; txt.textContent='backend connected'; }
+    if(r.ok){ el.className='status ok'; txt.textContent='バックエンド接続済み'; }
     else throw new Error();
-  }catch(e){ el.className='status bad'; txt.textContent='backend unreachable'; }
+  }catch(e){ el.className='status bad'; txt.textContent='バックエンドに接続できません'; }
 }
 
 function setLoading(){
-  document.getElementById('resultBody').innerHTML = `<div class="empty"><div class="spinner"></div>Running extract → match → validate → decide…</div>`;
+  document.getElementById('resultBody').innerHTML = `<div class="empty"><div class="spinner"></div>抽出 → 照合 → 検証 → 判断 を実行中…</div>`;
 }
 
 function statusLabel(s){
@@ -232,11 +232,11 @@ function statusLabel(s){
 function renderResult(inv){
   const pillClass = inv.status;
   const fields = [
-    ['Vendor', inv.vendor_name_raw || '—'],
-    ['Invoice #', inv.invoice_number || '—'],
-    ['PO #', inv.po_number || '—'],
-    ['Amount', inv.amount != null ? `${inv.amount.toLocaleString()} ${inv.currency||''}` : '—'],
-    ['Confidence', inv.confidence != null ? inv.confidence.toFixed(2) : '—'],
+    ['取引先', inv.vendor_name_raw || '—'],
+    ['請求書番号', inv.invoice_number || '—'],
+    ['発注書番号', inv.po_number || '—'],
+    ['金額', inv.amount != null ? `${inv.amount.toLocaleString()} ${inv.currency||''}` : '—'],
+    ['信頼度', inv.confidence != null ? inv.confidence.toFixed(2) : '—'],
   ];
   const audit = (inv.audit_logs||[]).map(a => `
     <li><span class="dot2"></span><div>
@@ -248,14 +248,14 @@ function renderResult(inv){
     <div class="result-head">
       <span class="pill ${pillClass}">${statusLabel(inv.status)}</span>
       <div>
-        <div class="result-title">${inv.vendor_name_raw || 'Unknown vendor'}</div>
-        <div class="result-sub">invoice #${inv.id}</div>
+        <div class="result-title">${inv.vendor_name_raw || '取引先不明'}</div>
+        <div class="result-sub">請求書 #${inv.id}</div>
       </div>
     </div>
     <div class="fields">
       ${fields.map(([k,v]) => `<div><div class="k">${k}</div><div class="v">${v}</div></div>`).join('')}
     </div>
-    <div class="reason"><b>Reasoning —</b> ${inv.decision_reason || 'No reasoning recorded.'}</div>
+    <div class="reason"><b>判断理由 —</b> ${inv.decision_reason || '判断理由が記録されていません。'}</div>
     <ul class="audit">${audit}</ul>
   `;
 }
@@ -276,14 +276,14 @@ async function submitInvoice(blob, filename){
     });
     if(!r.ok){
       const t = await r.text();
-      renderError(`Request failed (${r.status}): ${t}`);
+      renderError(`リクエスト失敗（${r.status}）: ${t}`);
       return;
     }
     const inv = await r.json();
     renderResult(inv);
     refreshHistory();
   }catch(e){
-    renderError('Could not reach the backend: ' + e.message);
+    renderError('バックエンドに接続できません: ' + e.message);
   }
 }
 
@@ -312,13 +312,13 @@ async function refreshHistory(){
   const el = document.getElementById('history');
   try{
     const r = await fetch('/invoices', {headers:{'X-API-Key': apiKey()}});
-    if(!r.ok){ el.innerHTML = '<div class="empty">Could not load history.</div>'; return; }
+    if(!r.ok){ el.innerHTML = '<div class="empty">履歴を読み込めませんでした。</div>'; return; }
     const items = await r.json();
-    if(!items.length){ el.innerHTML = '<div class="empty">Nothing processed yet.</div>'; return; }
+    if(!items.length){ el.innerHTML = '<div class="empty">まだ処理された請求書がありません。</div>'; return; }
     el.innerHTML = items.slice().reverse().map(inv => `
       <div class="hist-row" data-id="${inv.id}">
         <span class="pill ${inv.status}">${statusLabel(inv.status)}</span>
-        <span class="hname">${inv.vendor_name_raw || 'Unknown'} · ${inv.invoice_number || '—'}</span>
+        <span class="hname">${inv.vendor_name_raw || '不明'} · ${inv.invoice_number || '—'}</span>
         <span class="hid">#${inv.id}</span>
       </div>
     `).join('');
@@ -329,7 +329,7 @@ async function refreshHistory(){
       });
     });
   }catch(e){
-    el.innerHTML = '<div class="empty">Could not load history.</div>';
+    el.innerHTML = '<div class="empty">履歴を読み込めませんでした。</div>';
   }
 }
 
@@ -339,7 +339,7 @@ document.getElementById('createPoBtn').addEventListener('click', async () => {
   const expected_amount = parseFloat(document.getElementById('poAmount').value);
   const out = document.getElementById('poResult');
   if(!vendor_name || !po_number || !expected_amount){
-    out.textContent = 'Fill in vendor, PO number, and amount first.';
+    out.textContent = '取引先名・発注書番号・金額を入力してください。';
     return;
   }
   try{
@@ -348,10 +348,10 @@ document.getElementById('createPoBtn').addEventListener('click', async () => {
       headers:{'Content-Type':'application/json', 'X-API-Key': apiKey()},
       body: JSON.stringify({vendor_name, po_number, expected_amount, currency:'JPY'}),
     });
-    if(!r.ok){ out.textContent = 'Failed: ' + await r.text(); return; }
-    out.textContent = `Created — now upload an invoice claiming PO "${po_number}".`;
+    if(!r.ok){ out.textContent = '失敗しました: ' + await r.text(); return; }
+    out.textContent = `作成しました — 発注書「${po_number}」を参照する請求書をアップロードしてください。`;
   }catch(e){
-    out.textContent = 'Could not reach the backend.';
+    out.textContent = 'バックエンドに接続できません。';
   }
 });
 
